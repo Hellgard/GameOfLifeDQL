@@ -25,6 +25,20 @@ class Map:
             for x in range(self.width):
                 if x == 20 and y == 20:
                     self.map[y][x] = [Ressource.PLAYER, 9]
+                elif x == 20 and y == 10:
+                    self.map[y][x] = [Ressource.PLAYER, 9]
+                elif x == 10 and y == 20:
+                    self.map[y][x] = [Ressource.PLAYER, 9, Ressource.PLAYER, Ressource.PLAYER ]
+                elif x == 10 and y == 10:
+                    self.map[y][x] = [Ressource.PLAYER, 9, Ressource.PLAYER, Ressource.PLAYER, Ressource.PLAYER, Ressource.PLAYER ]
+                elif x == 20 and y == 30:
+                    self.map[y][x] = [Ressource.PLAYER, 9, Ressource.PLAYER, Ressource.PLAYER ]
+                elif x == 30 and y == 20:
+                    self.map[y][x] = [Ressource.PLAYER, 9, Ressource.PLAYER, Ressource.PLAYER, Ressource.PLAYER, Ressource.PLAYER ]
+                elif x == 30 and y == 10:
+                    self.map[y][x] = [Ressource.PLAYER, 9, Ressource.PLAYER, Ressource.PLAYER, Ressource.PLAYER, Ressource.PLAYER ]
+                elif x == 10 and y == 30:
+                    self.map[y][x] = [Ressource.PLAYER, 9, Ressource.PLAYER, Ressource.PLAYER, Ressource.PLAYER, Ressource.PLAYER ]
                 else:
                     self.map[y][x] = self.generate_ressources()
     
@@ -62,7 +76,7 @@ class Map:
         }
         
         # Determine if the tile should be empty
-        if random.random() <= (2 - sum(densities.values())):
+        if random.random() <= (1 - sum(densities.values())):
             return ressources
 
         for ressource, density in densities.items():

@@ -5,6 +5,7 @@ class Direction(Enum):
     LEFT = 2
     UP = 3
     DOWN = 4
+    NONE = 5
 
 class Ressource(Enum):
     FOOD = 1
