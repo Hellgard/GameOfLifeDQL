@@ -4,7 +4,8 @@ from source.constants import Point, font, White, Red, Black, Blue, Green, Yellow
 import pygame
 
 class Map:
-    def __init__(self, width, height):
+    def __init__(self, width, height, players):
+        self.players = players
         self.width = width
         self.height = height
         self.map = [[0 for x in range(width)] for y in range(height)]
@@ -23,25 +24,24 @@ class Map:
     def generate_map(self):
         for y in range(self.height):
             for x in range(self.width):
-                if x == 20 and y == 20:
-                    self.map[y][x] = [Ressource.PLAYER, 9]
-                elif x == 20 and y == 10:
-                    self.map[y][x] = [Ressource.PLAYER, 9]
-                elif x == 10 and y == 20:
-                    self.map[y][x] = [Ressource.PLAYER, 9, Ressource.PLAYER, Ressource.PLAYER ]
-                elif x == 10 and y == 10:
-                    self.map[y][x] = [Ressource.PLAYER, 9, Ressource.PLAYER, Ressource.PLAYER, Ressource.PLAYER, Ressource.PLAYER ]
-                elif x == 20 and y == 30:
-                    self.map[y][x] = [Ressource.PLAYER, 9, Ressource.PLAYER, Ressource.PLAYER ]
-                elif x == 30 and y == 20:
-                    self.map[y][x] = [Ressource.PLAYER, 9, Ressource.PLAYER, Ressource.PLAYER, Ressource.PLAYER, Ressource.PLAYER ]
-                elif x == 30 and y == 10:
-                    self.map[y][x] = [Ressource.PLAYER, 9, Ressource.PLAYER, Ressource.PLAYER, Ressource.PLAYER, Ressource.PLAYER ]
-                elif x == 10 and y == 30:
-                    self.map[y][x] = [Ressource.PLAYER, 9, Ressource.PLAYER, Ressource.PLAYER, Ressource.PLAYER, Ressource.PLAYER ]
+                tile = [Ressource.EMPTY]
+                isPlayer = False
+                for player in self.players:
+                    if player.position.x == x and player.position.y == y:
+                        tile.append(Ressource.PLAYER)
+                        isPlayer = True
+                if isPlayer == False:
+                    tile = self.generate_ressources()
+                self.map[y][x] = tile
+    
+    def regenerate_ressources(self):
+        for y in range(self.height):
+            for x in range(self.width):
+                if Ressource.PLAYER in self.map[y][x]:
+                    continue
                 else:
                     self.map[y][x] = self.generate_ressources()
-    
+
     def generate_ressource(self):
         rand = random.random()
         if rand <= self.density_thystame.value:
@@ -61,7 +61,7 @@ class Map:
         elif rand <= self.density_food.value:
             return Ressource.FOOD
         else:
-            return 0
+            return Ressource.EMPTY
         
     def generate_ressources(self):
         ressources = []
@@ -76,7 +76,7 @@ class Map:
         }
         
         # Determine if the tile should be empty
-        if random.random() <= (1 - sum(densities.values())):
+        if random.random() <= (1.5 - sum(densities.values())):
             return ressources
 
         for ressource, density in densities.items():
@@ -84,7 +84,6 @@ class Map:
                 ressources.append(ressource)
 
         return ressources
-
     
     def draw(self):
         for y in range(self.height):

@@ -2,7 +2,7 @@ import pygame
 from collections import namedtuple
 
 pygame.init()
-font = pygame.font.Font('source/arial.ttf', 25)
+font = pygame.font.Font('data/arial.ttf', 25)
 Point = namedtuple('Point', 'x, y')
 
 White = (255, 255, 255)

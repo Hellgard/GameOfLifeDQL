@@ -16,6 +16,7 @@ class Ressource(Enum):
     PHIRAS = 6
     THYSTAME = 7
     PLAYER = 8
+    EMPTY = 9
 
 class Density(Enum):
     Thystame = 0.05

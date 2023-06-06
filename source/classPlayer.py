@@ -25,6 +25,9 @@ class Player:
         pygame.mixer.music.play()
 
 
+    def get_distance(self, other_player):
+        return abs(self.position.x - other_player.position.x) + abs(self.position.y - other_player.position.y)
+    
     def Check_evolution_requirements(self, players):
         if self.level == 8:
             return False
@@ -57,7 +60,7 @@ class Player:
                 return False
         
         # delete rocks from inventory
-        soundfile = "vorbis.mp3"
+        soundfile = "data/vorbis.mp3"
         self.play_sound(soundfile)
         list = self.levelRequirements[self.level - 1][1:7]
         # print (list)
@@ -67,7 +70,9 @@ class Player:
     def get_id(self):
         return self.id
     
-    def move(self, direction):
+    def move(self):
+        direction = self.get_direction()
+
         if direction == Direction.NONE:
             return
         if direction == Direction.UP:

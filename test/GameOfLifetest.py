@@ -4,16 +4,9 @@ import time
 from enum import Enum
 from collections import namedtuple
 import numpy as np
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
-import os
-import matplotlib.pyplot as plt
-from IPython import display
 
 pygame.init()
-font = pygame.font.Font('arial.ttf', 25)
+font = pygame.font.Font('data/arial.ttf', 25)
 
 class Direction(Enum):
     RIGHT = 1
@@ -35,8 +28,8 @@ Cyan = (0, 255, 255)
 Brown = (165, 42, 42)
 Grey = (128, 128, 128)
 
-BLOCK_SIZE = 20
-SPEED = 100
+BLOCK_SIZE = 10
+SPEED = 1
 Forward = 100
 
 class Ressource(Enum):
@@ -48,7 +41,6 @@ class Ressource(Enum):
     PHIRAS = 6
     THYSTAME = 7
     PLAYER = 8
-    EMPTY = 9
 
 class Density(Enum):
     Thystame = 0.05
@@ -148,13 +140,13 @@ class Map:
         for y in range(self.height):
             for x in range(self.width):
                 if x == 20 and y == 20:
-                    self.map[y][x] = [Ressource.PLAYER, Ressource.EMPTY]
+                    self.map[y][x] = [Ressource.PLAYER, 9]
                 elif x == 20 and y == 10:
-                    self.map[y][x] = [Ressource.PLAYER, Ressource.EMPTY]
+                    self.map[y][x] = [Ressource.PLAYER, 9]
                 elif x == 10 and y == 20:
-                    self.map[y][x] = [Ressource.PLAYER, Ressource.EMPTY, Ressource.PLAYER, Ressource.PLAYER ]
+                    self.map[y][x] = [Ressource.PLAYER, 9, Ressource.PLAYER, Ressource.PLAYER ]
                 elif x == 10 and y == 30:
-                    self.map[y][x] = [Ressource.PLAYER, Ressource.EMPTY, Ressource.PLAYER, Ressource.PLAYER, Ressource.PLAYER, Ressource.PLAYER ]
+                    self.map[y][x] = [Ressource.PLAYER, 9, Ressource.PLAYER, Ressource.PLAYER, Ressource.PLAYER, Ressource.PLAYER ]
                 else:
                     self.map[y][x] = self.generate_ressources()
     
@@ -185,7 +177,7 @@ class Map:
         elif rand <= self.density_food.value:
             return Ressource.FOOD
         else:
-            return Ressource.EMPTY
+            return 0
         
     def generate_ressources(self):
         ressources = []
@@ -200,7 +192,7 @@ class Map:
         }
         
         # Determine if the tile should be empty
-        if random.random() <= (1 - sum(densities.values())):
+        if random.random() <= (2 - sum(densities.values())):
             return ressources
 
         for ressource, density in densities.items():
@@ -390,6 +382,9 @@ class Player:
         
         number_of_players = 1
         if self.level > 1:
+            # print ("Check_evolution_requirements")
+            # print (self.levelRequirements[self.level - 1])
+            # print (self.inventory.get_all())
             for other_player in players:
                 if other_player.get_id() != self.get_id():
                     # print ("other player is not self")
@@ -409,11 +404,10 @@ class Player:
             if self.inventory.get_all()[i] < self.levelRequirements[self.level - 1][i]:
                 if i == 0:
                     continue
-                # print ("requirement not met: " + Ressource(i + 1).name + " " + str(self.inventory.get_all()[i]) + " < " + str(self.levelRequirements[self.level - 1][i]))
                 return False
         
         # delete rocks from inventory
-        soundfile = "vorbis.mp3"
+        soundfile = "data/vorbis.mp3"
         self.play_sound(soundfile)
         list = self.levelRequirements[self.level - 1][1:7]
         # print (list)
@@ -423,10 +417,7 @@ class Player:
     def get_id(self):
         return self.id
     
-    def move(self):
-        direction = self.get_direction()
-
-
+    def move(self, direction):
         if direction == Direction.NONE:
             return
         if direction == Direction.UP:
@@ -503,31 +494,19 @@ class Player:
         print ("childs: " + str(len(self.childs)))
         print ("\n------------------")
 
-class GameOfLifeAI:
+class GameOfLife:
     def __init__(self, map_size):
         self.map_size = map_size
-        self.clock = pygame.time.Clock()
-        self.reset()
-        
-    def reset(self):
-        self.map = Map(self.map_size.x, self.map_size.y)
-        self.speed = time.time()
-        self.timeBeforeDeath = 1260 / Forward
-        self.time = 0
-        self.current = 0
-        self.timeBeforeRegen = 20
-        self.pending_players = []
-        self.value = 0.1
-        self.player = Player(Point(20, 20), self.map_size.x, self.map_size.y, 1, 1)
-        self.player_level2 = Player(Point(20, 10), self.map_size.x, self.map_size.y, 2, 2)
-        self.player_level4 = Player(Point(10, 20), self.map_size.x, self.map_size.y, 4, 4)
-        self.player_level4_2 = Player(Point(10, 20), self.map_size.x, self.map_size.y, 4.5, 4)
-        self.player_level4_3 = Player(Point(10, 20), self.map_size.x, self.map_size.y, 4.8, 4)
-        self.player_level6 = Player(Point(10, 30), self.map_size.x, self.map_size.y, 6, 6)
-        self.player_level6_2 = Player(Point(10, 30), self.map_size.x, self.map_size.y, 6.2, 6)
-        self.player_level6_3 = Player(Point(10, 30), self.map_size.x, self.map_size.y, 6.3, 6)
-        self.player_level6_4 = Player(Point(10, 30), self.map_size.x, self.map_size.y, 6.4, 6)
-        self.player_level6_5 = Player(Point(10, 30), self.map_size.x, self.map_size.y, 6.5, 6)
+        self.player = Player(Point(20, 20), map_size.x, map_size.y, 1, 1)
+        self.player_level2 = Player(Point(20, 10), map_size.x, map_size.y, 2, 2)
+        self.player_level4 = Player(Point(10, 20), map_size.x, map_size.y, 4, 4)
+        self.player_level4_2 = Player(Point(10, 20), map_size.x, map_size.y, 4.5, 4)
+        self.player_level4_3 = Player(Point(10, 20), map_size.x, map_size.y, 4.8, 4)
+        self.player_level6 = Player(Point(10, 30), map_size.x, map_size.y, 6, 6)
+        self.player_level6_2 = Player(Point(10, 30), map_size.x, map_size.y, 6.2, 6)
+        self.player_level6_3 = Player(Point(10, 30), map_size.x, map_size.y, 6.3, 6)
+        self.player_level6_4 = Player(Point(10, 30), map_size.x, map_size.y, 6.4, 6)
+        self.player_level6_5 = Player(Point(10, 30), map_size.x, map_size.y, 6.5, 6)
         self.players = [self.player, self.player_level2, self.player_level4, self.player_level4_2, self.player_level4_3, self.player_level6, self.player_level6_2, self.player_level6_3, self.player_level6_4, self.player_level6_5]
         for play in self.players:
             if play == self.player:
@@ -539,7 +518,11 @@ class GameOfLifeAI:
             play.inventory.add(Ressource.MENDIANE, 100)
             play.inventory.add(Ressource.PHIRAS, 100)
             play.inventory.add(Ressource.THYSTAME, 100)
-        self.evolve_Iteration = 0
+        self.map = Map(map_size.x, map_size.y)
+        self.speed = time.time()
+        self.timeBeforeDeath = 1260 / Forward
+        self.time = time.time()
+        self.timeBeforeRegen = 20
         self.RESOURCE_ACTIONS = {
             Ressource.FOOD: self.player.inventory.add,
             Ressource.LIMEMATE: self.player.inventory.add,
@@ -549,38 +532,32 @@ class GameOfLifeAI:
             Ressource.PHIRAS: self.player.inventory.add,
             Ressource.THYSTAME: self.player.inventory.add
         }
-
+        self.pending_players = []
 
     def check_evolution(self):
-        reward = 0
         addPlayer = False
         players_ = []
         for player2 in self.players:
-            # player2.show()
+            player2.show()
             if player2.Check_evolution_requirements(self.players):
                 print("Player " + str(player2.id) + " evolved")
                 addPlayer = True
                 players_.append(player2)
 
         for play in players_:
-            reward += play.level
             play.evolve()
         player = self.player
         if addPlayer:
-            self.evolve_Iteration = 50
             new_player = Player(Point(player.get_position().x, player.get_position().y), self.map_size.x,
                                 self.map_size.y, len(self.players) + 1, 1)
-            self.pending_players.append((new_player, self.time, players_)) # the new player will appear 2 seconds later
-        return reward
+            self.pending_players.append((new_player, time.time() + 5, players_)) # the new player will appear 5 seconds later
 
     def add_pending_players(self):
-        current_time = self.time
+        current_time = time.time()
         for player2, appearance_time, players in self.pending_players.copy():
-            if appearance_time + 2 < current_time:
+            if current_time >= appearance_time:
                 self.players.append(player2)
-                tile = self.map.get(player2.get_position())
-                tile.append(Ressource.PLAYER)
-                self.map.update(player2.get_position(), tile)
+                self.map.update(player2.get_position(), [Ressource.PLAYER, 9])
                 for player1 in players:
                     player1.set_child(player2)
                 self.pending_players.remove((player2, appearance_time, players))
@@ -597,117 +574,92 @@ class GameOfLifeAI:
     def get_ressource(self, index):
         return self.ressources[index]
 
-    def play_step(self, action):
-        
-        for event in pygame.event.get():
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
-                    # print pos of all players
-                    for player in self.players:
-                        print(player.show())
+    def game(self):
+
+        Speed = SPEED
+        Value = 0.1
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        # print pos of all players
+                        for player in self.players:
+                            print(player.show())
+                        pygame.quit()
+                        exit()
+                    if event.key == pygame.K_LEFT:
+                        self.player.set_direction(Direction.LEFT)
+                    elif event.key == pygame.K_RIGHT:
+                        self.player.set_direction(Direction.RIGHT)
+                    elif event.key == pygame.K_UP:
+                        self.player.set_direction(Direction.UP)
+                    elif event.key == pygame.K_DOWN:
+                        self.player.set_direction(Direction.DOWN)
+                    elif event.key == pygame.K_SPACE:
+                        Speed -= Value
+                        Value += 0.1
+                    elif event.key == pygame.K_RETURN:
+                        Speed += Value
+                        Value -= 0.1
+                else:
+                    self.player.set_direction(Direction.NONE)
+
+            if time.time() - self.speed >= Speed:
+                self.timeBeforeRegen -= 1
+                self.timeBeforeDeath -= 1
+                Player_pos = self.player.get_position_after(self.player.get_direction())
+                resources = self.map.get(Player_pos)  # Get the resources on the tile the player is going to move to
+                print("resources to be taken : ", resources)
+                if Ressource.PLAYER not in resources:
+                    actual_resources = self.map.get(self.player.get_position())  # Get the resources on the player's current tile
+                    print("actual_resources : ", actual_resources)
+                    # check if the there is a player on the tile and if there is more than one player on the tile
+                    if Ressource.PLAYER in actual_resources:
+                        self.check_evolution()
+                        tile = self.map.get(self.player.get_position())
+                        tile.remove(Ressource.PLAYER)
+                        print("tile : ", tile)
+                        self.map.update(self.player.get_position(), tile)
+                    else:
+                        self.map.update(self.player.get_position(), [9])
+                    self.player.move(self.player.get_direction())  # Move the player in the specified direction
+                    for resource in resources:
+                        if resource == Ressource.FOOD:
+                            self.timeBeforeDeath += 126
+                        if resource in self.RESOURCE_ACTIONS:
+                            action = self.RESOURCE_ACTIONS[resource]
+                            action(resource, 1)
+                    self.map.update(self.player.get_position(), [Ressource.PLAYER, 9])  # Update the map with the player's new position
+                    self.add_pending_players()
+                else:
+                    actual_resources = self.map.get(self.player.get_position())  # Get the resources on the player's current tile
+                    print("actual_resources : ", actual_resources)
+                    # check if the there is a player on the tile and if there is more than one player on the tile
+                    if Ressource.PLAYER in actual_resources:
+                        tile = self.map.get(self.player.get_position())
+                        tile.remove(Ressource.PLAYER)
+                        print("tile : ", tile)
+                        self.map.update(self.player.get_position(), tile)
+                    else:
+                        self.map.update(self.player.get_position(), [9])
+                    self.player.move(self.player.get_direction())  # Move the player in the specified direction
+                    # Update the map with the player's new position and the player/s on the tile
+                    tile = self.map.get(self.player.get_position())
+                    tile.append(Ressource.PLAYER)
+                    self.map.update(self.player.get_position(), tile)
+
+                if self.timeBeforeRegen <= 0:
+                    self.timeBeforeRegen = 20
+                    self.map.regenerate_ressources()
+                print("player level : ", self.player.get_level())
+                self.map.draw()
+                pygame.display.flip()
+                self.speed = time.time()
+                self.player.inventory.show()  # Show the player's inventory
+                if self.timeBeforeDeath <= 0:
+                    print("You died")
                     pygame.quit()
                     exit()
-        done, score, reward = self.move(action)
-        self.clock.tick(SPEED)
-        return done, score, reward
-    
-    def move(self, action):
-        self.choose_direction(action, self.player)
-        reward = 0
-        self.time += 1
-        self.evolve_Iteration += 1
-        self.timeBeforeRegen -= 1
-        self.timeBeforeDeath -= 1
-        Player_pos = self.player.get_position_after(self.player.get_direction())
-        resources = self.map.get(Player_pos)  # Get the resources on the tile the player is going to move to
-        # print("resources to be taken : ", resources)
-
-        # check if the player can move to the tile, and if he can, move him
-        reward = self.verif_and_move(resources)
-
-        GameOver = False
-        if self.timeBeforeDeath <= 0:
-            print("You died")
-            reward = -30
-            GameOver = True
-            return GameOver, self.player.get_level(), reward
-        if self.evolve_Iteration >= 100:
-            print("You died")
-            reward = -10
-            GameOver = True
-            return GameOver, self.player.get_level(), reward
-        
-        # check if the ressources need to be regenerated
-        if self.timeBeforeRegen <= 0:
-            self.timeBeforeRegen = 20
-            self.map.regenerate_ressources()
-
-        self.map.draw()
-        pygame.display.flip()
-        # self.player.inventory.show()  # Show the player's inventory
-        return GameOver, self.player.get_level(), reward
-           
-    def verif_and_move(self, resources):
-        reward = 0
-        if Ressource.PLAYER not in resources:
-            actual_resources = self.map.get(self.player.get_position())  # Get the resources on the player's current tile
-            # print("actual_resources : ", actual_resources)
-            # check if the there is a player on the tile and if there is more than one player on the tile
-            if Ressource.PLAYER in actual_resources:
-                reward = self.check_evolution()
-                tile = self.map.get(self.player.get_position())
-                tile.remove(Ressource.PLAYER)
-                # print("tile : ", tile)
-                self.map.update(self.player.get_position(), tile)
-            else:
-                self.map.update(self.player.get_position(), [Ressource.EMPTY])
-            self.player.move()  # Move the player
-            for resource in resources:
-                # if resource == Ressource.EMPTY:
-                #     reward -= 1
-                if resource == Ressource.FOOD:
-                    self.timeBeforeDeath += 126
-                    reward += 3
-                if resource in self.RESOURCE_ACTIONS:
-                    action = self.RESOURCE_ACTIONS[resource]
-                    action(resource, 1)
-                    if resource != Ressource.FOOD and resource != Ressource.EMPTY:
-                        reward += 5
-            self.map.update(self.player.get_position(), [Ressource.PLAYER, Ressource.EMPTY])  # Update the map with the player's new position
-            self.add_pending_players()
-        else:
-            reward += 5
-            actual_resources = self.map.get(self.player.get_position())  # Get the resources on the player's current tile
-            # print("actual_resources : ", actual_resources)
-            # check if the there is a player on the tile and if there is more than one player on the tile
-            if Ressource.PLAYER in actual_resources:
-                tile = self.map.get(self.player.get_position())
-                tile.remove(Ressource.PLAYER)
-                # print("tile : ", tile)
-                self.map.update(self.player.get_position(), tile)
-            else:
-                self.map.update(self.player.get_position(), [Ressource.EMPTY])
-            self.player.move()  # Move the player in the specified direction
-            # Update the map with the player's new position and the player/s on the tile
-            tile = self.map.get(self.player.get_position())
-            tile.append(Ressource.PLAYER)
-            self.map.update(self.player.get_position(), tile)
-        return reward
-
-    def choose_direction(self, action, player):
-        clock_wise = [Direction.RIGHT, Direction.LEFT, Direction.UP, Direction.DOWN]
-        idx = clock_wise.index(player.get_direction())
-
-
-        if np.array_equal(action, [1, 0, 0]):
-            new_dir = clock_wise[idx]
-        elif np.array_equal(action, [0, 1, 0]):
-            new_dir = clock_wise[(idx + 1) % 4]
-        else:
-            new_dir = clock_wise[(idx - 1) % 4]
-
-        # print("new dir: " + str(new_dir))
-        player.set_direction(new_dir)
 
     def check_resources(self, resources):
         for resource in resources:
@@ -715,3 +667,10 @@ class GameOfLifeAI:
                 action = self.RESOURCE_ACTIONS[resource]
                 action(resource, 1)
 
+def __main__():
+    game = GameOfLife(Point(40, 40))
+    print("Game of life")
+    game.map.draw()
+    game.game()
+
+__main__()
