@@ -36,7 +36,7 @@ Brown = (165, 42, 42)
 Grey = (128, 128, 128)
 
 BLOCK_SIZE = 20
-SPEED = 100
+SPEED = 500
 Forward = 100
 
 class Ressource(Enum):
@@ -128,7 +128,8 @@ class Actions(Enum):
     collect_ressources = 3
 
 class Map:
-    def __init__(self, width, height):
+    def __init__(self, width, height, players):
+        self.players = players
         self.width = width
         self.height = height
         self.map = [[0 for x in range(width)] for y in range(height)]
@@ -147,16 +148,15 @@ class Map:
     def generate_map(self):
         for y in range(self.height):
             for x in range(self.width):
-                if x == 20 and y == 20:
-                    self.map[y][x] = [Ressource.PLAYER, Ressource.EMPTY]
-                elif x == 20 and y == 10:
-                    self.map[y][x] = [Ressource.PLAYER, Ressource.EMPTY]
-                elif x == 10 and y == 20:
-                    self.map[y][x] = [Ressource.PLAYER, Ressource.EMPTY, Ressource.PLAYER, Ressource.PLAYER ]
-                elif x == 10 and y == 30:
-                    self.map[y][x] = [Ressource.PLAYER, Ressource.EMPTY, Ressource.PLAYER, Ressource.PLAYER, Ressource.PLAYER, Ressource.PLAYER ]
-                else:
-                    self.map[y][x] = self.generate_ressources()
+                tile = [9]
+                isPlayer = False
+                for player in self.players:
+                    if player.position.x == x and player.position.y == y:
+                        tile.append(Ressource.PLAYER)
+                        isPlayer = True
+                if isPlayer == False:
+                    tile = self.generate_ressources()
+                self.map[y][x] = tile
     
     def regenerate_ressources(self):
         for y in range(self.height):
@@ -200,7 +200,7 @@ class Map:
         }
         
         # Determine if the tile should be empty
-        if random.random() <= (1 - sum(densities.values())):
+        if random.random() <= (1.5 - sum(densities.values())):
             return ressources
 
         for ressource, density in densities.items():
@@ -383,7 +383,9 @@ class Player:
         pygame.mixer.music.load(sound_file)
         pygame.mixer.music.play()
 
-
+    def get_distance(self, other_player):
+        return abs(self.position.x - other_player.position.x) + abs(self.position.y - other_player.position.y)
+    
     def Check_evolution_requirements(self, players):
         if self.level == 8:
             return False
@@ -510,7 +512,6 @@ class GameOfLifeAI:
         self.reset()
         
     def reset(self):
-        self.map = Map(self.map_size.x, self.map_size.y)
         self.speed = time.time()
         self.timeBeforeDeath = 1260 / Forward
         self.time = 0
@@ -519,15 +520,27 @@ class GameOfLifeAI:
         self.pending_players = []
         self.value = 0.1
         self.player = Player(Point(20, 20), self.map_size.x, self.map_size.y, 1, 1)
-        self.player_level2 = Player(Point(20, 10), self.map_size.x, self.map_size.y, 2, 2)
-        self.player_level4 = Player(Point(10, 20), self.map_size.x, self.map_size.y, 4, 4)
-        self.player_level4_2 = Player(Point(10, 20), self.map_size.x, self.map_size.y, 4.5, 4)
-        self.player_level4_3 = Player(Point(10, 20), self.map_size.x, self.map_size.y, 4.8, 4)
-        self.player_level6 = Player(Point(10, 30), self.map_size.x, self.map_size.y, 6, 6)
-        self.player_level6_2 = Player(Point(10, 30), self.map_size.x, self.map_size.y, 6.2, 6)
-        self.player_level6_3 = Player(Point(10, 30), self.map_size.x, self.map_size.y, 6.3, 6)
-        self.player_level6_4 = Player(Point(10, 30), self.map_size.x, self.map_size.y, 6.4, 6)
-        self.player_level6_5 = Player(Point(10, 30), self.map_size.x, self.map_size.y, 6.5, 6)
+        # randon between 0 and width
+        random_x = random.randint(0, self.map_size.x - 1)
+        # randon between 0 and height
+        random_y = random.randint(0, self.map_size.y - 1)
+        self.player_level2 = Player(Point(random_x, random_y), self.map_size.x, self.map_size.y, 2, 2)
+        # randon between 0 and width
+        random_x = random.randint(0, self.map_size.x - 1)
+        # randon between 0 and height
+        random_y = random.randint(0, self.map_size.y - 1)
+        self.player_level4 = Player(Point(random_x, random_y), self.map_size.x, self.map_size.y, 4, 4)
+        self.player_level4_2 = Player(Point(random_x, random_y), self.map_size.x, self.map_size.y, 4.5, 4)
+        self.player_level4_3 = Player(Point(random_x, random_y), self.map_size.x, self.map_size.y, 4.8, 4)
+        # randon between 0 and width
+        random_x = random.randint(0, self.map_size.x - 1)
+        # randon between 0 and height
+        random_y = random.randint(0, self.map_size.y - 1)
+        self.player_level6 = Player(Point(random_x, random_y), self.map_size.x, self.map_size.y, 6, 6)
+        self.player_level6_2 = Player(Point(random_x, random_y), self.map_size.x, self.map_size.y, 6.2, 6)
+        self.player_level6_3 = Player(Point(random_x, random_y), self.map_size.x, self.map_size.y, 6.3, 6)
+        self.player_level6_4 = Player(Point(random_x, random_y), self.map_size.x, self.map_size.y, 6.4, 6)
+        self.player_level6_5 = Player(Point(random_x, random_y), self.map_size.x, self.map_size.y, 6.5, 6)
         self.players = [self.player, self.player_level2, self.player_level4, self.player_level4_2, self.player_level4_3, self.player_level6, self.player_level6_2, self.player_level6_3, self.player_level6_4, self.player_level6_5]
         for play in self.players:
             if play == self.player:
@@ -539,7 +552,9 @@ class GameOfLifeAI:
             play.inventory.add(Ressource.MENDIANE, 100)
             play.inventory.add(Ressource.PHIRAS, 100)
             play.inventory.add(Ressource.THYSTAME, 100)
+        self.map = Map(self.map_size.x, self.map_size.y, self.players)
         self.evolve_Iteration = 0
+        self.nearest = self.player
         self.RESOURCE_ACTIONS = {
             Ressource.FOOD: self.player.inventory.add,
             Ressource.LIMEMATE: self.player.inventory.add,
@@ -549,6 +564,20 @@ class GameOfLifeAI:
             Ressource.PHIRAS: self.player.inventory.add,
             Ressource.THYSTAME: self.player.inventory.add
         }
+
+    def nearest_player_same_level(self, player):
+        nearest = self.nearest
+        for play in self.players:
+            if play == player:
+                continue
+            if play.level == player.level:
+                if nearest is self.player:
+                    nearest = play
+                elif player.get_distance(nearest) > player.get_distance(play):
+                    nearest = play
+        
+        self.nearest = nearest
+        # print("nearest is " + str(nearest.position))
 
 
     def check_evolution(self):
@@ -567,6 +596,7 @@ class GameOfLifeAI:
             play.evolve()
         player = self.player
         if addPlayer:
+            print ("nearest is " + str(self.nearest.position))
             self.evolve_Iteration = 50
             new_player = Player(Point(player.get_position().x, player.get_position().y), self.map_size.x,
                                 self.map_size.y, len(self.players) + 1, 1)
@@ -608,6 +638,8 @@ class GameOfLifeAI:
                     pygame.quit()
                     exit()
         done, score, reward = self.move(action)
+        self.nearest_player_same_level(self.player)
+        # print("nearest player : ", self.nearest.position)
         self.clock.tick(SPEED)
         return done, score, reward
     
@@ -631,7 +663,7 @@ class GameOfLifeAI:
             reward = -30
             GameOver = True
             return GameOver, self.player.get_level(), reward
-        if self.evolve_Iteration >= 500:
+        if self.evolve_Iteration >= 1000:
             print("You died")
             reward = -20
             GameOver = True

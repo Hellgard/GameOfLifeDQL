@@ -5,7 +5,6 @@ import pygame
 
 class Map:
     def __init__(self, width, height, players):
-        self.players = players
         self.width = width
         self.height = height
         self.map = [[0 for x in range(width)] for y in range(height)]
@@ -19,14 +18,14 @@ class Map:
         self.child = []
         self.screen = pygame.display.set_mode((self.width * BLOCK_SIZE, self.height * BLOCK_SIZE))
         self.screen.fill(Black)
-        self.generate_map()
+        self.generate_map(players)
 
-    def generate_map(self):
+    def generate_map(self, players):
         for y in range(self.height):
             for x in range(self.width):
                 tile = [Ressource.EMPTY]
                 isPlayer = False
-                for player in self.players:
+                for player in players:
                     if player.position.x == x and player.position.y == y:
                         tile.append(Ressource.PLAYER)
                         isPlayer = True
@@ -34,34 +33,17 @@ class Map:
                     tile = self.generate_ressources()
                 self.map[y][x] = tile
     
-    def regenerate_ressources(self):
+    def regenerate_ressources(self, players):
+        isPlayer = False
         for y in range(self.height):
             for x in range(self.width):
-                if Ressource.PLAYER in self.map[y][x]:
-                    continue
+                for player in players:
+                    if player.position.x == x and player.position.y == y:
+                        isPlayer = True
+                if isPlayer == True:
+                    isPlayer = False
                 else:
                     self.map[y][x] = self.generate_ressources()
-
-    def generate_ressource(self):
-        rand = random.random()
-        if rand <= self.density_thystame.value:
-            return Ressource.THYSTAME
-        elif rand <= self.density_phiras.value:
-            return Ressource.PHIRAS
-        elif rand <= self.density_mendiane.value:
-            rand2 = random.random()
-            if rand2 <= 0.5:
-                return Ressource.MENDIANE
-            else:
-                return Ressource.SIBUR
-        elif rand <= self.density_deraumere.value:
-            return Ressource.DERAUMERE
-        elif rand <= self.density_linemate.value:
-            return Ressource.LIMEMATE
-        elif rand <= self.density_food.value:
-            return Ressource.FOOD
-        else:
-            return Ressource.EMPTY
         
     def generate_ressources(self):
         ressources = []
@@ -85,11 +67,15 @@ class Map:
 
         return ressources
     
-    def draw(self):
+    def draw(self, players):
         for y in range(self.height):
             for x in range(self.width):
                 tile = self.map[y][x]
-                if Ressource.PLAYER in tile:
+                isPlayer = False
+                for player in players:
+                    if player.position.x == x and player.position.y == y:
+                        isPlayer = True
+                if isPlayer == True:
                     pygame.draw.rect(self.screen, Black, pygame.Rect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE))
                 else:
                     color = self.get_predominant_color(tile)
@@ -141,8 +127,6 @@ class Map:
             return Yellow
         elif resource == Ressource.THYSTAME:
             return White
-        elif resource == Ressource.PLAYER:
-            return Black
         else:
             return Red
 
@@ -165,3 +149,9 @@ class Map:
             return self.map[0][point.x]
         else:
             return self.map[0][0]
+        
+    def show(self):
+        for y in range(self.height):
+            for x in range(self.width):
+                print(self.map[y][x], end='')
+            print()

@@ -16,15 +16,18 @@ class Agent:
         self.epsilon = 0 # randomness
         self.gamma = 0.9 # discount rate
         self.memory = deque(maxlen=MAX_MEMORY) # popleft()
-        self.model = Linear_QNet(11, 256, 3)
+        self.model = Linear_QNet(12, 256, 3)
         self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
 
     def get_state(self, game):
-        player = game.players[0]
+        player = game.player
         map = game.map
+        nearest = game.nearest
+
         direction = player.direction
         inventory = player.inventory
         position = player.position
+
         level = player.level
         # player can see pyramid of 3,1 blocks in front of him
         if direction == Direction.RIGHT:
@@ -52,28 +55,33 @@ class Agent:
         dir_r = direction == Direction.RIGHT
         dir_u = direction == Direction.UP
         dir_d = direction == Direction.DOWN
-        dir_n = direction == Direction.NONE
+
+        nearest_player_pos = nearest.position
 
         state = [
-            # player level
-            level,
-
             # is there a ressource in front of the player
             ressource1 is not None,
             ressource2 is not None,
             ressource3 is not None,
             ressource4 is not None,
 
-            Ressource.FOOD in [ressource1, ressource2, ressource3, ressource4],
-
-            # is there a player in front of the player
-            Ressource.PLAYER in [ressource1, ressource2, ressource3, ressource4],
-
+            # # nearest player location
+            # nearest_player_pos.x < position.x,
+            # nearest_player_pos.x > position.x,
+            # nearest_player_pos.y < position.y,
+            # nearest_player_pos.y > position.y,
+        
             # move direction
             dir_l,
             dir_r,
             dir_u,
-            dir_d
+            dir_d,
+
+            # nearest player with same level location
+            nearest_player_pos.x < position.x,
+            nearest_player_pos.x > position.x,
+            nearest_player_pos.y < position.y,
+            nearest_player_pos.y > position.y,
         ]
         return np.array(state, dtype=int)
 
@@ -107,12 +115,41 @@ class Agent:
             final_move[move] = 1
 
         return final_move
+
+# test it from saved model
+def test():
+    plot_scores = []
+    plot_mean_scores = []
+    total_score = 0
+    total_reward = 0
+    record = 0
+    agent = Agent()
+    agent.model.load_state_dict(torch.load('model.pth'))
+    agent.model.eval()
+    game = GameOfLifeAI(Point(40, 40))
+    while True:
+        old_state = agent.get_state(game)
+
+        final_move = agent.get_action(old_state)
+
+        done, score, reward = game.play_step(final_move)
+        new_state = agent.get_state(game)
+        total_reward += reward
+
+        if done:
+            game.reset()
+            agent.ngames += 1
+
+            if total_reward > record:
+                record = total_reward
+                agent.model
  
 def train():
     plot_scores = []
     plot_mean_scores = []
     total_score = 0
     total_reward = 0
+    record_reward = 0
     record = 0
     agent = Agent()
     game = GameOfLifeAI(Point(40, 40))
@@ -134,11 +171,14 @@ def train():
             agent.ngames += 1
             agent.train_long_memory()
 
-            if total_reward > record:
-                record = total_reward
+            if total_reward > record_reward:
+                record_reward = total_reward
                 agent.model.save()
+            
+            if score > record:
+                record = score
 
-            print('Game', agent.ngames, 'Score', score, 'Reward:', total_reward, 'Record of reward:', record)
+            print('Game', agent.ngames, 'Score', score, 'Record', record, 'Reward:', total_reward, 'Record Reward:', record_reward)
             plot_scores.append(score)
             total_score += score
             mean_score = total_score / agent.ngames

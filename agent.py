@@ -9,7 +9,7 @@ from helper import plot
 MAX_MEMORY = 100_000
 BATCH_SIZE = 1000
 LR = 0.001
-SPEED = 1
+SPEED = 10
 
 class Agent:
     def __init__(self):
@@ -125,28 +125,30 @@ def test():
     game = GameOfLifeAI(Point(40, 40))
     player = game.get_players()[0]
     while True:
-        # for player in game.get_players():
-        old_state = agent.get_state(game, player)
-        final_move = agent.get_action(old_state)
+        for player in game.get_players():
+            old_state = agent.get_state(game, player)
+            final_move = agent.get_action(old_state)
 
-        game.check_user_input(player)
+            game.check_user_input(player)
 
-        game.choose_direction(final_move, player)
-        ressources = game.check_next_move(player)
-        condition = game.verif_next_tile(ressources, player)
-        game.move_player(player=player, condition=condition, resources=ressources)
-        game.map_update(player, condition)
-        game.nearest_player_same_level(player)
+            game.choose_direction(final_move, player)
+            ressources, pos = game.check_next_move(player)
+            condition = game.verif_next_tile(player, pos)
+            game.move_player(player=player, condition=condition, resources=ressources)
+            game.nearest_player_same_level(player)
 
-        game.clock.tick(SPEED)
-
-        game.check_evolution()
+        
+        
         done = game.check_game_state()
         if done:
             record = len(game.get_players())
             print("Game nb : ", agent.ngames, "Record : ", record)
             game.reset()
             agent.ngames += 1
+
+        game.check_evolution()
+        game.add_pending_players()
+        game.clock.tick(SPEED)
  
 if __name__ == '__main__':
     test()

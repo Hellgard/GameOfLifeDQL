@@ -71,9 +71,6 @@ class GameOfLifeAI:
         for player2, appearance_time, players in self.pending_players.copy():
             if appearance_time + 2 < current_time:
                 self.players.append(player2)
-                tile = self.map.get(player2.get_position())
-                tile.append(Ressource.PLAYER)
-                self.map.update(player2.get_position(), tile)
                 for player1 in players:
                     player1.set_child(player2)
                 self.pending_players.remove((player2, appearance_time, players))
@@ -96,6 +93,7 @@ class GameOfLifeAI:
                 if event.key == pygame.K_ESCAPE:
                     for player in self.players:
                         player.show()
+                    self.map.show()
                     pygame.quit()
                     exit()
         
@@ -110,33 +108,38 @@ class GameOfLifeAI:
         self.timeBeforeDeath -= 1
         Player_pos = player.get_position_after(player.get_direction())
         resources = self.map.get(Player_pos)  # Get the resources on the tile the player is going to move to
-        return resources
+        return resources, Player_pos
            
-    def verif_next_tile(self, resources, player):
-        if Ressource.PLAYER not in resources:
-            actual_resources = self.map.get(player.get_position())  # Get the resources on the player's current tile
-            # print("actual_resources : ", actual_resources)
-            # check if the there is a player on the tile and if there is more than one player on the tile
-            if Ressource.PLAYER in actual_resources:
-                tile = self.map.get(player.get_position())
-                tile.remove(Ressource.PLAYER)
-                # print("tile : ", tile)
-                self.map.update(player.get_position(), tile)
-            else:
+    def verif_next_tile(self, player, posNext):
+        isPlayer = False
+        for play in self.players:
+            if play == player:
+                continue
+            if play.get_position() == posNext:
+                isPlayer = True
+                break
+        if isPlayer:
+            isPlayer2 = False
+            for playe in self.players:
+                if playe == player:
+                    continue
+                if playe.get_position() == player.get_position():
+                    isPlayer2 = True
+                    break
+            if isPlayer2 == False:
                 self.map.update(player.get_position(), [Ressource.EMPTY])
-            return True
-        else:
-            actual_resources = self.map.get(self.player.get_position())  # Get the resources on the player's current tile
-            if Ressource.PLAYER in actual_resources:
-                tile = self.map.get(self.player.get_position())
-                tile.remove(Ressource.PLAYER)
-                self.map.update(self.player.get_position(), tile)
-            else:
-                self.map.update(self.player.get_position(), [Ressource.EMPTY])
-            tile = self.map.get(self.player.get_position())
-            tile.append(Ressource.PLAYER)
-            self.map.update(self.player.get_position(), tile)
             return False
+        else:
+            isPlayer2 = False
+            for playe in self.players:
+                if playe == player:
+                    continue
+                if playe.get_position() == player.get_position():
+                    isPlayer2 = True
+                    break
+            if isPlayer2 == False:
+                self.map.update(self.player.get_position(), [Ressource.EMPTY])
+            return True
 
     def move_player(self, player, condition, resources):
         self.RESOURCE_ACTIONS = {
@@ -159,15 +162,6 @@ class GameOfLifeAI:
         else:
             self.player.move()  # Move the player in the specified direction
 
-    def map_update(self, player, condition):
-        if condition:
-            self.map.update(player.get_position(), [Ressource.PLAYER, Ressource.EMPTY])  # Update the map with the player's new position
-            self.add_pending_players()
-        else:
-            tile = self.map.get(self.player.get_position())
-            tile.append(Ressource.PLAYER)
-            self.map.update(self.player.get_position(), tile)
-
     def check_game_state(self):
         GameOver = False
         if self.timeBeforeDeath <= 0:
@@ -179,8 +173,8 @@ class GameOfLifeAI:
         # check if the ressources need to be regenerated
         if self.timeBeforeRegen <= 0:
             self.timeBeforeRegen = 20
-            self.map.regenerate_ressources()
-        self.map.draw()
+            self.map.regenerate_ressources(self.players)
+        self.map.draw(self.players)
         pygame.display.flip()
         # self.player.inventory.show()  # Show the player's inventory
         return GameOver

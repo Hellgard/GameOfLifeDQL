@@ -36,7 +36,7 @@ Brown = (165, 42, 42)
 Grey = (128, 128, 128)
 
 BLOCK_SIZE = 20
-SPEED = 100
+SPEED = 500
 Forward = 100
 
 class Ressource(Enum):
