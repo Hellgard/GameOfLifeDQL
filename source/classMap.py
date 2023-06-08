@@ -1,10 +1,10 @@
 import random
 from source.classEnum import Ressource, Density
-from source.constants import Point, font, White, Red, Black, Blue, Green, Yellow, Purple, Cyan, Brown, Grey, BLOCK_SIZE, SPEED, Forward
+from source.constants import Point, font, White, Red, Black, Blue, Green, Yellow, Purple, Cyan, Brown, Grey, BLOCK_SIZE, Forward
 import pygame
 
 class Map:
-    def __init__(self, width, height, players):
+    def __init__(self, width=60, height=60, players=[]):
         self.width = width
         self.height = height
         self.map = [[0 for x in range(width)] for y in range(height)]
@@ -58,7 +58,7 @@ class Map:
         }
         
         # Determine if the tile should be empty
-        if random.random() <= (1.5 - sum(densities.values())):
+        if random.random() <= (1.75 - sum(densities.values())):
             return ressources
 
         for ressource, density in densities.items():

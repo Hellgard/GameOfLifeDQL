@@ -1,5 +1,5 @@
 from source.classEnum import Direction, Ressource
-from source.constants import Point, font, White, Red, Black, Blue, Green, Yellow, Purple, Cyan, Brown, Grey, BLOCK_SIZE, SPEED, Forward
+from source.constants import Point, font, White, Red, Black, Blue, Green, Yellow, Purple, Cyan, Brown, Grey, BLOCK_SIZE, FPS, Forward
 from source.classInventory import Inventory
 import pygame
 from source.classMap import Map
@@ -16,7 +16,6 @@ class GameOfLifeAI:
         
     def reset(self):
         self.speed = time.time()
-        self.timeBeforeDeath = 1260 / Forward
         self.time = 0
         self.current = 0
         self.timeBeforeRegen = 20
@@ -93,7 +92,7 @@ class GameOfLifeAI:
                 if event.key == pygame.K_ESCAPE:
                     for player in self.players:
                         player.show()
-                    self.map.show()
+                    # self.map.show()
                     pygame.quit()
                     exit()
         
@@ -104,8 +103,6 @@ class GameOfLifeAI:
     def check_next_move(self, player):
         self.time += 1
         self.evolve_Iteration += 1
-        self.timeBeforeRegen -= 1
-        self.timeBeforeDeath -= 1
         Player_pos = player.get_position_after(player.get_direction())
         resources = self.map.get(Player_pos)  # Get the resources on the tile the player is going to move to
         return resources, Player_pos
@@ -155,7 +152,7 @@ class GameOfLifeAI:
             player.move()  # Move the player
             for resource in resources:
                 if resource == Ressource.FOOD:
-                    self.timeBeforeDeath += 126
+                    player.timeBeforeDeath += 126
                 if resource in self.RESOURCE_ACTIONS:
                     action = self.RESOURCE_ACTIONS[resource]
                     action(resource, 1)
@@ -163,35 +160,32 @@ class GameOfLifeAI:
             self.player.move()  # Move the player in the specified direction
 
     def check_game_state(self):
-        GameOver = False
-        if self.timeBeforeDeath <= 0:
-            print("You died")
-            reward = -30
-            GameOver = True
-            return GameOver
-        
         # check if the ressources need to be regenerated
         if self.timeBeforeRegen <= 0:
             self.timeBeforeRegen = 20
             self.map.regenerate_ressources(self.players)
-        self.map.draw(self.players)
-        pygame.display.flip()
         # self.player.inventory.show()  # Show the player's inventory
+
+    def check_player_state(self, player):
+        GameOver = False
+        if player.timeBeforeDeath <= 0:
+            print("player " + str(player.id) + " died")
+            GameOver = True
         return GameOver
 
     def choose_direction(self, action, player):
-        clock_wise = [Direction.RIGHT, Direction.LEFT, Direction.UP, Direction.DOWN]
+        clock_wise = [Direction.RIGHT, Direction.LEFT, Direction.UP, Direction.DOWN, Direction.NONE]  # Ajout de None à la liste des directions possibles
         idx = clock_wise.index(player.get_direction())
 
-
-        if np.array_equal(action, [1, 0, 0]):
+        if np.array_equal(action, [1, 0, 0, 0]):
             new_dir = clock_wise[idx]
-        elif np.array_equal(action, [0, 1, 0]):
-            new_dir = clock_wise[(idx + 1) % 4]
+        elif np.array_equal(action, [0, 1, 0, 0]):
+            new_dir = clock_wise[(idx + 1) % 5]  # Utilisation du modulo 5 pour gérer le dépassement de l'indice
+        elif np.array_equal(action, [0, 0, 1, 0]):
+            new_dir = clock_wise[(idx - 1) % 5]  # Utilisation du modulo 5 pour gérer le dépassement de l'indice
         else:
-            new_dir = clock_wise[(idx - 1) % 4]
+            new_dir = clock_wise[4]  # Si l'action est [0, 0, 0, 1], la nouvelle direction est None
 
-        # print("new dir: " + str(new_dir))
         player.set_direction(new_dir)
 
     def check_resources(self, resources):

@@ -17,5 +17,5 @@ Brown = (165, 42, 42)
 Grey = (128, 128, 128)
 
 BLOCK_SIZE = 10
-SPEED = 1
+FPS = 5
 Forward = 100

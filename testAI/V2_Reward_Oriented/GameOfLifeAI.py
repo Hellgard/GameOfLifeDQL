@@ -421,15 +421,17 @@ class Player:
         # print (list)
         self.inventory.removes([Ressource.LIMEMATE, Ressource.DERAUMERE, Ressource.SIBUR, Ressource.MENDIANE, Ressource.PHIRAS, Ressource.THYSTAME], list)
         return True
-    
+
     def can_evolve(self):
+        if self.level == 8:
+            return False
         for i in range(7):
             if self.inventory.get_all()[i] < self.levelRequirements[self.level - 1][i]:
                 if i == 0:
                     continue
                 return False
+        return True
 
-    
     def get_id(self):
         return self.id
     
@@ -602,6 +604,8 @@ class GameOfLifeAI:
         for play in players_:
             reward += play.level * 10
             play.evolve()
+            if play.level == 8:
+                reward += 100
         player = self.player
         if addPlayer:
             print ("nearest is " + str(self.nearest.position))

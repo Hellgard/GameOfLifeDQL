@@ -1,5 +1,5 @@
 from source.classEnum import Direction, Ressource
-from source.constants import Point, font, White, Red, Black, Blue, Green, Yellow, Purple, Cyan, Brown, Grey, BLOCK_SIZE, SPEED, Forward
+from source.constants import Point, font, White, Red, Black, Blue, Green, Yellow, Purple, Cyan, Brown, Grey, BLOCK_SIZE, Forward
 from source.classInventory import Inventory
 import pygame
 import random
@@ -18,11 +18,12 @@ class Player:
         self.childs = []
         self.level = level
         self.id = random.randint(0, 100000) - rand
+        self.timeBeforeDeath = 1260 / Forward
 
     def play_sound(self, sound_file):
         pygame.mixer.init()
-        pygame.mixer.music.load(sound_file)
-        pygame.mixer.music.play()
+        # pygame.mixer.music.load(sound_file)
+        # pygame.mixer.music.play()
 
 
     def get_distance(self, other_player):
@@ -67,10 +68,21 @@ class Player:
         self.inventory.removes([Ressource.LIMEMATE, Ressource.DERAUMERE, Ressource.SIBUR, Ressource.MENDIANE, Ressource.PHIRAS, Ressource.THYSTAME], list)
         return True
     
+    def can_evolve(self):
+        if self.level == 8:
+            return False
+        for i in range(7):
+            if self.inventory.get_all()[i] < self.levelRequirements[self.level - 1][i]:
+                if i == 0:
+                    continue
+                return False
+        return True
+    
     def get_id(self):
         return self.id
     
     def move(self):
+        self.timeBeforeDeath -= 1
         direction = self.get_direction()
 
         if direction == Direction.NONE:

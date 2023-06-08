@@ -16,7 +16,7 @@ class Agent:
         self.epsilon = 0 # randomness
         self.gamma = 0.9 # discount rate
         self.memory = deque(maxlen=MAX_MEMORY) # popleft()
-        self.model = Linear_QNet(13, 256, 4)
+        self.model = Linear_QNet(10, 256, 4)
         self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
 
     def get_state(self, game):
@@ -27,6 +27,7 @@ class Agent:
         direction = player.direction
         inventory = player.inventory
         position = player.position
+        can_evolve = player.can_evolve()
 
         level = player.level
         # player can see pyramid of 3,1 blocks in front of him
@@ -66,17 +67,8 @@ class Agent:
 
         state = [
             # is there a ressource in front of the player
-            ressource1 is not None,
-            ressource2 is not None,
-            ressource3 is not None,
-            ressource4 is not None,
+            can_evolve,
 
-            # # nearest player location
-            # nearest_player_pos.x < position.x,
-            # nearest_player_pos.x > position.x,
-            # nearest_player_pos.y < position.y,
-            # nearest_player_pos.y > position.y,
-        
             # move direction
             dir_l,
             dir_r,
@@ -127,6 +119,7 @@ def train():
     plot_mean_scores = []
     total_score = 0
     total_reward = 0
+    record_reward = 0
     record = 0
     agent = Agent()
     game = GameOfLifeAI(Point(40, 40))
@@ -148,11 +141,15 @@ def train():
             agent.ngames += 1
             agent.train_long_memory()
 
+           
+            if total_reward > record_reward:
+                record_reward = total_reward
+                agent.model.save()
+            
             if score > record:
                 record = score
-                agent.model.save()
 
-            print('Game', agent.ngames, 'Score', score, 'Record', record, 'Reward:', total_reward)
+            print('Game', agent.ngames, 'Score', score, 'Record', record, 'Reward:', total_reward, 'Record Reward:', record_reward)
             plot_scores.append(score)
             total_score += score
             mean_score = total_score / agent.ngames
