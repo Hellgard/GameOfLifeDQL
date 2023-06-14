@@ -620,9 +620,6 @@ class GameOfLifeAI:
         for player2, appearance_time, players in self.pending_players.copy():
             if appearance_time + 2 < current_time:
                 self.players.append(player2)
-                tile = self.map.get(player2.get_position())
-                tile.append(Ressource.PLAYER)
-                self.map.update(player2.get_position(), tile)
                 for player1 in players:
                     player1.set_child(player2)
                 self.pending_players.remove((player2, appearance_time, players))

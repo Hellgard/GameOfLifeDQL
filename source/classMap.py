@@ -58,7 +58,7 @@ class Map:
         }
         
         # Determine if the tile should be empty
-        if random.random() <= (1.75 - sum(densities.values())):
+        if random.random() <= (1 - sum(densities.values())):
             return ressources
 
         for ressource, density in densities.items():

@@ -101,7 +101,6 @@ class Agent:
         self.trainer.train_step(state, action, reward, next_state, done)
 
     def get_action(self, state):
-        self.epsilon = 80 - self.ngames
         final_move = [0, 0, 0, 0]  # [left, right, forward, none] (Ajout de 0 pour la direction None)
         if random.randint(0, 200) < self.epsilon:
             move = random.randint(0, 3)  # Générer un entier entre 0 et 3 inclus pour inclure la direction None
@@ -118,10 +117,9 @@ class Agent:
 def test():
     record = 0
     agent = Agent()
-    agent.model.load_state_dict(torch.load('model/model3.pth'))
+    agent.model.load_state_dict(torch.load('model/model_V2.pth'))
     agent.model.eval()
     game = GameOfLifeAI(Point(60, 60))
-    player = game.get_players()[0]
     while True:
         for player in game.get_players():
             old_state = agent.get_state(game, player)
@@ -131,10 +129,18 @@ def test():
 
             game.choose_direction(final_move, player)
             ressources, pos = game.check_next_move(player)
-            condition = game.verif_next_tile(player, pos)
-            game.move_player(player=player, condition=condition, resources=ressources)
+            condition, reward = game.verif_next_tile(player, pos)
+            reward += game.move_player(player=player, condition=condition, resources=ressources)
             game.nearest_player_same_level(player)
-            done = game.check_player_state(player)
+            done, reward2 = game.check_player_state(player)
+            reward += reward2
+            
+            new_state = agent.get_state(game, player)
+
+            agent.train_short_memory(old_state, final_move, reward, new_state, done)
+
+            agent.remember(old_state, final_move, reward, new_state, done)
+            
             if done:
                 game.players.remove(player)
 

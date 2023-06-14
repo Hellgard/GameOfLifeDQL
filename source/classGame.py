@@ -26,6 +26,15 @@ class GameOfLifeAI:
         self.map = Map(self.map_size.x, self.map_size.y, self.players)
         self.evolve_Iteration = 0
         self.nearest = self.player
+        self.RESOURCE_ACTIONS = {
+            Ressource.FOOD: self.player.inventory.add,
+            Ressource.LIMEMATE: self.player.inventory.add,
+            Ressource.DERAUMERE: self.player.inventory.add,
+            Ressource.SIBUR: self.player.inventory.add,
+            Ressource.MENDIANE: self.player.inventory.add,
+            Ressource.PHIRAS: self.player.inventory.add,
+            Ressource.THYSTAME: self.player.inventory.add
+        }
 
     def nearest_player_same_level(self, player):
         nearest = self.nearest
@@ -40,7 +49,6 @@ class GameOfLifeAI:
         
         self.nearest = nearest
         # print("nearest is " + str(nearest.position))
-
 
     def check_evolution(self):
         reward = 0
@@ -96,7 +104,6 @@ class GameOfLifeAI:
                     pygame.quit()
                     exit()
         
-    
     def get_players(self):
         return self.players
 
@@ -108,6 +115,7 @@ class GameOfLifeAI:
         return resources, Player_pos
            
     def verif_next_tile(self, player, posNext):
+        reward = 0
         isPlayer = False
         for play in self.players:
             if play == player:
@@ -121,22 +129,24 @@ class GameOfLifeAI:
                 if playe == player:
                     continue
                 if playe.get_position() == player.get_position():
+                    reward += 10
                     isPlayer2 = True
                     break
             if isPlayer2 == False:
                 self.map.update(player.get_position(), [Ressource.EMPTY])
-            return False
+            return False, reward
         else:
             isPlayer2 = False
             for playe in self.players:
                 if playe == player:
                     continue
                 if playe.get_position() == player.get_position():
+                    reward += 10
                     isPlayer2 = True
                     break
             if isPlayer2 == False:
-                self.map.update(self.player.get_position(), [Ressource.EMPTY])
-            return True
+                self.map.update(player.get_position(), [Ressource.EMPTY])
+            return True, reward
 
     def move_player(self, player, condition, resources):
         self.RESOURCE_ACTIONS = {
@@ -148,16 +158,21 @@ class GameOfLifeAI:
             Ressource.PHIRAS: player.inventory.add,
             Ressource.THYSTAME: player.inventory.add
         }
+        self.evolve_Iteration += 1
+        reward = 0
         if condition:
             player.move()  # Move the player
             for resource in resources:
                 if resource == Ressource.FOOD:
                     player.timeBeforeDeath += 126
+                    reward += 1
                 if resource in self.RESOURCE_ACTIONS:
+                    reward += 2
                     action = self.RESOURCE_ACTIONS[resource]
                     action(resource, 1)
         else:
             self.player.move()  # Move the player in the specified direction
+        return reward
 
     def check_game_state(self):
         # check if the ressources need to be regenerated
@@ -168,10 +183,12 @@ class GameOfLifeAI:
 
     def check_player_state(self, player):
         GameOver = False
+        reward = 0
         if player.timeBeforeDeath <= 0:
+            reward -= 100
             print("player " + str(player.id) + " died")
             GameOver = True
-        return GameOver
+        return GameOver, reward
 
     def choose_direction(self, action, player):
         clock_wise = [Direction.RIGHT, Direction.LEFT, Direction.UP, Direction.DOWN, Direction.NONE]  # Ajout de None à la liste des directions possibles
@@ -193,3 +210,4 @@ class GameOfLifeAI:
             if resource in self.RESOURCE_ACTIONS:
                 action = self.RESOURCE_ACTIONS[resource]
                 action(resource, 1)
+

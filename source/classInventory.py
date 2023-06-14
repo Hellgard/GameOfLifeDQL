@@ -26,6 +26,12 @@ class Inventory:
             self.phiras += number
         elif ressource == Ressource.THYSTAME:
             self.thystame += number
+
+    def adds(self, ressources, numbers):
+        # ressources = [Ressource.FOOD, Ressource.LIMEMATE, Ressource.DERAUMERE, Ressource.SIBUR, Ressource.MENDIANE, Ressource.PHIRAS, Ressource.THYSTAME]
+        # numbers = [1, 1, 1, 1, 1, 1, 1]
+        for i in range(len(ressources)):
+            self.add(ressources[i], numbers[i])
     
     def remove(self, ressource, number):
         if ressource == Ressource.FOOD:

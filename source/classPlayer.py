@@ -18,7 +18,7 @@ class Player:
         self.childs = []
         self.level = level
         self.id = random.randint(0, 100000) - rand
-        self.timeBeforeDeath = 1260 / Forward
+        self.timeBeforeDeath = 3260 / Forward
 
     def play_sound(self, sound_file):
         pygame.mixer.init()
