@@ -35,6 +35,15 @@
         "inventory.h": "c",
         "map.h": "c",
         "stdbool.h": "c",
-        "game.h": "c"
+        "game.h": "c",
+        "*.tcc": "c",
+        "string": "c",
+        "unordered_map": "c",
+        "memory_resource": "c",
+        "numeric": "c",
+        "ostream": "c",
+        "streambuf": "c",
+        "tuple": "c",
+        "utility": "c"
     }
 }
