@@ -191,16 +191,16 @@ class GameOfLifeAI:
         return GameOver, reward
 
     def choose_direction(self, action, player):
-        clock_wise = [Direction.RIGHT, Direction.LEFT, Direction.UP, Direction.DOWN, Direction.NONE]  # Ajout de None à la liste des directions possibles
+        clock_wise = [Direction.RIGHT, Direction.DOWN, Direction.LEFT, Direction.UP, Direction.NONE]  # Ajout de None à la liste des directions possibles
         idx = clock_wise.index(player.get_direction())
 
-        if np.array_equal(action, [1, 0, 0, 0]):
+        if np.array_equal(action, [1, 0, 0, 0]): # Si l'action est [1, 0, 0, 0], la nouvelle direction est la direction actuelle
             new_dir = clock_wise[idx]
-        elif np.array_equal(action, [0, 1, 0, 0]):
+        elif np.array_equal(action, [0, 1, 0, 0]): # Si l'action est [0, 1, 0, 0], la nouvelle direction est la direction suivante dans le sens horaire
             new_dir = clock_wise[(idx + 1) % 5]  # Utilisation du modulo 5 pour gérer le dépassement de l'indice
-        elif np.array_equal(action, [0, 0, 1, 0]):
+        elif np.array_equal(action, [0, 0, 1, 0]): # Si l'action est [0, 0, 1, 0], la nouvelle direction est la direction précédente dans le sens horaire
             new_dir = clock_wise[(idx - 1) % 5]  # Utilisation du modulo 5 pour gérer le dépassement de l'indice
-        else:
+        else: # Si l'action est [0, 0, 0, 1], la nouvelle direction est None
             new_dir = clock_wise[4]  # Si l'action est [0, 0, 0, 1], la nouvelle direction est None
 
         player.set_direction(new_dir)

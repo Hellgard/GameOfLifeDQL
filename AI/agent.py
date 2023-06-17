@@ -66,7 +66,6 @@ class Agent:
         nearest_player_pos = nearest.position
 
         state = [
-            # is there a ressource in front of the player
             can_evolve,
 
             # move direction
@@ -101,7 +100,7 @@ class Agent:
         self.trainer.train_step(state, action, reward, next_state, done)
 
     def get_action(self, state):
-        final_move = [0, 0, 0, 0]  # [left, right, forward, none] (Ajout de 0 pour la direction None)
+        final_move = [0, 0, 0, 0]  # [forward, right, left, none]
         if random.randint(0, 200) < self.epsilon:
             move = random.randint(0, 3)  # Générer un entier entre 0 et 3 inclus pour inclure la direction None
             final_move[move] = 1

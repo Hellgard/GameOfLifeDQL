@@ -22,6 +22,7 @@
     #include <arpa/inet.h>
     #include <unistd.h>
     #include <stdbool.h>
+    #include "../Game/include/Game.h"
 
     typedef struct Teams_s {
         char *name;
@@ -51,6 +52,10 @@
         char *username;
         char *password;
         int logged;
+        int player_id;
+        int player_index;
+        char *team;
+        bool is_ready;
     } Client_t;
 
     typedef struct My_Socket_s {
@@ -76,7 +81,7 @@
 
     typedef struct Command_s {
         char *command;
-        int (*func)(Server_t *, int);
+        int (*func)(Server_t *, int, GameOfLifeAI *);
     } Command_t;
 
     typedef struct Command_list_s {
@@ -84,11 +89,21 @@
         struct Command_list_s *next;
     } Command_list_t;
 
+    typedef struct {
+        int port;
+        int width;
+        int height;
+        char** team_names;
+        int num_teams;
+        int clients_per_team;
+        double frequency;
+    } ServerOptions_t;
+
     int create_socket(void);
     int configure_socket(Server_t *server);
     int init_queue(Server_t *server);
     Socket_t *connect_socket(Server_t *server);
-    int server(Server_t *server, Command_list_t *command_list);
+    int server(Server_t *server, Command_list_t *command_list, ServerOptions_t *options, GameOfLifeAI *game);
     bool strContains(char *str, char *toFind);
     void init_server_null(Server_t *server);
     void init_command_list(Command_list_t *list);

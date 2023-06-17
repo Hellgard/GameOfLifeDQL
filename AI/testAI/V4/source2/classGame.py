@@ -204,7 +204,7 @@ class GameOfLifeAI:
             return GameOver, reward
 
     def choose_direction(self, action, player):
-        clock_wise = [Direction.RIGHT, Direction.LEFT, Direction.UP, Direction.DOWN, Direction.NONE]  # Ajout de None à la liste des directions possibles
+        clock_wise = [Direction.RIGHT, Direction.DOWN, Direction.LEFT, Direction.UP, Direction.NONE]  # Ajout de None à la liste des directions possibles
         idx = clock_wise.index(player.get_direction())
 
         if np.array_equal(action, [1, 0, 0, 0]):

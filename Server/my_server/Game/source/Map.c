@@ -25,17 +25,20 @@ Map* create_map(int width, int height) {
     map->width = width;
     map->height = height;
 
-    map->map = (Ressource**)malloc(height * sizeof(Ressource*));
+    map->map = (Ressource***)malloc(height * sizeof(Ressource**));
     if (map->map == NULL) {
-        fprintf(stderr, "Error: Failed to allocate memory for map data.\n");
+        fprintf(stderr, "Error: Failed to allocate memory for map->map.\n");
         exit(1);
     }
 
-    for (int i = 0; i < height; i++) {
-        map->map[i] = (Ressource*)malloc(width * sizeof(Ressource));
-        if (map->map[i] == NULL) {
-            fprintf(stderr, "Error: Failed to allocate memory for map row.\n");
+    for (int y = 0; y < height; y++) {
+        map->map[y] = (Ressource**)malloc(width * sizeof(Ressource*));
+        if (map->map[y] == NULL) {
+            fprintf(stderr, "Error: Failed to allocate memory for map->map[%d].\n", y);
             exit(1);
+        }
+        for (int x = 0; x < width; x++) {
+            map->map[y][x] = (Ressource*)malloc(sizeof(Ressource));
         }
     }
 
@@ -50,18 +53,18 @@ Map* create_map(int width, int height) {
     return map;
 }
 
-void generate_map(Map* map, Player ** players, int num_players) {
+void generate_map(Map* map, Player **players, int num_players) {
     srand(time(NULL));
-
+    printf("Generating map...\n");
     for (int y = 0; y < map->height; y++) {
         for (int x = 0; x < map->width; x++) {
             int tile_size = 1;
             Ressource* tile = (Ressource*)malloc(tile_size * sizeof(Ressource));
             tile[0] = Ressource_EMPTY;
             int isPlayer = 0;
-            for (int i = 0; i < num_players; i++) {
+            for (int i = 0; i < num_players; i++) {  // Changed loop condition to `i < num_players`
                 if (players[i]->position.x == x && players[i]->position.y == y) {
-                    // append Ressource_PLAYER to tile
+                    printf("Player found!\n");
                     tile_size++;
                     tile = (Ressource*)realloc(tile, tile_size * sizeof(Ressource));
                     tile[tile_size - 1] = Ressource_PLAYER;
@@ -70,11 +73,15 @@ void generate_map(Map* map, Player ** players, int num_players) {
                 }
             }
             if (!isPlayer) {
-                tile_size = rand() % 6;
-                tile = generate_ressources(map, &tile_size);
+                free(tile);  // Free the initially allocated tile
+                tile = generate_ressources(map, &tile_size);  // Update tile with generated resources
+                printf("Resources generated!\n");
+            }
+            for (int i = 0; i < tile_size; i++) {
+                printf("tile[%d] = %d\n", i, tile[i]);
             }
             map->map[y][x] = malloc(tile_size * sizeof(Ressource));
-            map->map[y][x] = *tile;
+            map->map[y][x] = tile;
         }
     }
 }
@@ -95,27 +102,37 @@ void regenerate_ressources(Map* map, Player** players, int num_players) {
             }
 
             if (!isPlayer) {
-                tile_size = rand() % 6;
                 tile = generate_ressources(map, &tile_size);
             }
             map->map[y][x] = malloc(tile_size * sizeof(Ressource));
-            map->map[y][x] = *tile;
+            map->map[y][x] = tile;
         }
     }
 }
 
 Ressource *generate_ressources(Map* map, int* tile_size) {
+    *tile_size = rand() % 6;
     Ressource* tile = (Ressource*)malloc(*tile_size * sizeof(Ressource));
     float densities[] = {
-        map->density_food,
-        map->density_linemate,
-        map->density_deraumere,
-        map->density_sibur,
-        map->density_mendiane,
+        map->density_thystame,
         map->density_phiras,
-        map->density_thystame
+        map->density_mendiane,
+        map->density_sibur,
+        map->density_deraumere,
+        map->density_linemate,
+        map->density_food
     };
-    int num_resources = sizeof(densities) / sizeof(float);
+
+    Ressource resources[] = {
+        Ressource_THYSTAME,
+        Ressource_PHIRAS,
+        Ressource_MENDIANE,
+        Ressource_SIBUR,
+        Ressource_DERAUMERE,
+        Ressource_LIMEMATE,
+        Ressource_FOOD
+    };
+    int num_resources = *tile_size;
 
     // Determine if the tile should be empty
     float empty_probability = 1;
@@ -125,13 +142,16 @@ Ressource *generate_ressources(Map* map, int* tile_size) {
 
     if (rand() / (float)RAND_MAX <= empty_probability) {
         tile[0] = Ressource_EMPTY;
-        *tile_size = 1;
         return tile;
     }
-
-    for (int i = 0; i < num_resources; i++) {
+    int j = 0;
+    for (int i = 0; j < num_resources; i++) {
         if (rand() / (float)RAND_MAX <= densities[i]) {
-            tile[(*tile_size)++] = i + 1;
+            tile[j] = resources[i];
+            j++;
+        }
+        if (i == 7 - 1) {
+            i = 0;
         }
     }
     return tile;
@@ -200,19 +220,19 @@ Color get_color(Ressource resource) {
     }
 }
 
-void update_map(Map* map, Point point, Ressource ressource) {
+void update_map(Map* map, Point point, Ressource *ressources) {
     if (point.x < map->width && point.y < map->height) {
-        map->map[point.y][point.x] = ressource;
+        map->map[point.y][point.x] = ressources;
     } else if (point.x >= map->width) {
-        map->map[point.y][0] = ressource;
+        map->map[point.y][0] = ressources;
     } else if (point.y >= map->height) {
-        map->map[0][point.x] = ressource;
+        map->map[0][point.x] = ressources;
     } else {
-        map->map[0][0] = ressource;
+        map->map[0][0] = ressources;
     }
 }
 
-Ressource get_tile(Map* map, Point point) {
+Ressource *get_tile(Map* map, Point point) {
     if (point.x < map->width && point.y < map->height) {
         return map->map[point.y][point.x];
     } else if (point.x >= map->width) {
@@ -238,40 +258,23 @@ void draw_map(Map* map, const char* filename, Player** players, int num_players)
         fprintf(stderr, "Error: Failed to open file %s.\n", filename);
         exit(1);
     }
-    printf("Drawing map to %s\n", filename);
     for (int y = 0; y < map->height; y++) {
         for (int x = 0; x < map->width; x++) {
-            Ressource* tile = map->map[y] + x;
-            int tile_size = sizeof(map->map[y]) / sizeof(Ressource);
             
             int is_player_here = 0;
             Color color;
-            for (int i = 0; i < tile_size; i++)
-                if (tile[i] == Ressource_PLAYER) {
-                    color.r = 0;
-                    color.g = 0;
-                    color.b = 0;
+            for (int j = 0; j < num_players; j++)
+                if (players[j]->position.x == x && players[j]->position.y == y) {
                     is_player_here = 1;
                 }
 
-            if (is_player_here != 1){
-                color = get_predominant_color(tile, tile_size);
-            }
-            // Write colored dot to file
-            if (color.r == 0 && color.g == 0 && color.b == 0) {
-                fprintf(file, "\u2593"); // Full block
-            } else if (color.r == 255 && color.g == 0 && color.b == 0) {
-                fprintf(file, "\u2588"); // Dark shade
-            } else if (color.r == 0 && color.g == 255 && color.b == 0) {
-                fprintf(file, "\u2591"); // Light shade
-            } else if (color.r == 0 && color.g == 0 && color.b == 255) {
-                fprintf(file, "\u2592"); // Medium shade
+            if (is_player_here == 0) {
+                fprintf(file, "\u2588"); // Full block
             } else {
-                fprintf(file, ".");
+                fprintf(file, "\u25CF"); // Black circle
             }
         }
         fprintf(file, "\n");
     }
-    printf("Done drawing map to %s\n", filename);
-    printf("Map saved to %s\n", filename);
+    fclose(file);
 }

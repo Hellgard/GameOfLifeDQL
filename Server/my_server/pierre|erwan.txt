@@ -1,22 +1,9 @@
 This is a test file for pierre|erwan
 
-pierre: yo
-
+pierre: mon joueur t'eclate
 
 erwan: yo
 
+pierre: yo ca va ?
 
-pierre: putain je suis trop con je me suis ecris a moi meme mdr
-
-
-erwan: mdrrrrrrr
-
-
-erwan: mais pierre, depuis le debut tu te parles a toi meme, cest un test je te rappel
-
-
-pierre: OMG
-
-
-erwan: en tout cas ca marche bien
-
+erwan: trkl

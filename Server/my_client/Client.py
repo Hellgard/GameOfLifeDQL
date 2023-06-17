@@ -14,7 +14,7 @@ def send_command(socket, command):
     response = socket.recv(1024).decode()
     return response
 
-def help_command(socket):
+def help_command():
     help_message = """Available commands:
 Connection commands:
     /help: display this help
@@ -33,20 +33,6 @@ Gameplay commands:
     /Incantation: start an incantation"""
     print(help_message)
 
-def forward_command(socket):
-    response = send_command(socket, "/Forward")
-    print("Received from server:", response)
-    return response
-
-def right_command(socket):
-    response = send_command(socket, "/Right")
-    print("Received from server:", response)
-    return response
-
-def left_command(socket):
-    response = send_command(socket, "/Left")
-    print("Received from server:", response)
-    return response
 
 def look_command(socket):
     response = send_command(socket, "/Look")
@@ -60,7 +46,13 @@ def inventory_command(socket):
 
 def broadcast_command(socket):
     message = input("Enter a broadcast message: ")
-    response = send_command(socket, "/Broadcast " + message)
+    response = send_command(socket, "Broadcast " + message)
+    print("Received from server:", response)
+    return response
+
+def move_command(socket):
+    message = input("Enter a direction, Forward, Right, Left, None: ")
+    response = send_command(socket, "/Move " + message)
     print("Received from server:", response)
     return response
 
@@ -75,8 +67,7 @@ def fork_command(socket):
     return response
 
 def take_command(socket):
-    item = input("Enter the item name to take: ")
-    response = send_command(socket, "/Take " + item)
+    response = send_command(socket, "/Take")
     print("Received from server:", response)
     return response
 
@@ -102,17 +93,24 @@ def main():
     command_mode = True
 
     command_functions = {
-        "/help": help_command,
-        "/Forward": forward_command,
-        "/Right": right_command,
-        "/Left": left_command,
-        "/Look": look_command,
-        "/Inventory": inventory_command,
-        "/Broadcast": broadcast_command,
-        "/Connect_nbr": connect_nbr_command,
-        "/Fork": fork_command,
-        "/Take": take_command,
-        "/Incantation": incantation_command
+        "Move": move_command,
+        "Look": look_command,
+        "Inventory": inventory_command,
+        "Broadcast": broadcast_command,
+        "Connect_nbr": connect_nbr_command,
+        "Fork": fork_command,
+        "Take": take_command,
+        "Incantation": incantation_command,
+    }
+
+    server_functions = {
+        "/login",
+        "/password",
+        "/logout",
+        "/users",
+        "/user",
+        "/send",
+        "Team",
     }
 
     while True:
@@ -137,18 +135,30 @@ def main():
                 print("/send: send a message to a user")
                 continue
 
+            if message in command_functions:
+                continue
+            
             client_socket.send(message.encode())
-
             data = client_socket.recv(1024).decode()
             print("Received from server:", data)
+            
         else:
             message = input("Enter a command (/help, '/quit' to quit or /switch to change mode): ")
             if message == '/quit':
                 break
+
+            if message == '/help':
+                help_command()
+                continue
             
             if message == '/switch':
                 print("Switching to command mode")
-                command_mode = False
+                command_mode = True
+                continue
+            if 'Team' in message:
+                client_socket.send(message.encode())
+                data = client_socket.recv(1024).decode()
+                print("Received from server:", data)
                 continue
             if message in command_functions:
                 data = command_functions[message](client_socket)

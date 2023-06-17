@@ -5,26 +5,65 @@
 #include <time.h>
 #include <stdio.h>
 #include <stdbool.h>
+// rand is included in stdlib.h
 
-GameOfLifeAI* create_game_of_life_ai(int width, int height) {
+Player **init_players(Player **players, int nb_team, int nb_player_per_team, int width, int height, char **teams_name)
+{
+    int i = 0;
+    int j = 0;
+    int k = 0;
+    int l = 0;
+    int random = 0;
+    int level = 1;
+    int id = 0;
+    int nb_player = nb_team * nb_player_per_team;
+
+    srand(time(NULL));
+    for (i = 0; i < nb_team; i++)
+    {
+        for (j = 0; j < nb_player_per_team; j++)
+        {
+            random = rand() % 4;
+            players[k] = init_player(width, height, random, level, teams_name[i]);
+            players[k]->width = width;
+            players[k]->height = height;
+            k++;
+        }
+    }
+    
+    players[k] = NONE;
+    return players;
+}
+
+GameOfLifeAI* create_game_of_life_ai(int width, int height, int nb_team, int nb_player_per_team, int frequency, char **teams_name)
+{
     GameOfLifeAI* game = (GameOfLifeAI*)malloc(sizeof(GameOfLifeAI));
     game->map_size.x = width;
     game->map_size.y = height;
     game->speed = 20;
     game->time = 0;
-    game->current = 0;
+    game->frequency = frequency;
+    game->current = nb_team * nb_player_per_team;
     game->timeBeforeRegen = 20;
-    printf("Creating player\n");
-    int random = rand() % 1212121; // random number for the player
-    game->player = init_player(width, height, random, 1);
-    printf("Player created\n");
-    game->players = (Player**)malloc(sizeof(Player*));
-    printf("Creating map\n");
-    game->players[0] = game->player;
+    game->players = (Player**)malloc(sizeof(Player*) * nb_team * nb_player_per_team);
+    game->nb_team = nb_team;
+    game->nb_player_per_team = nb_player_per_team;
+    game->teams_name = teams_name;
+    game->teams_slot = (int*)malloc(sizeof(int) * nb_team);
+    for (int i = 0; i < nb_team; i++) {
+        game->teams_slot[i] = nb_player_per_team;
+    }
+
+    printf("Creating players\n");
+    game->players = init_players(game->players, nb_team, nb_player_per_team, width, height, teams_name);
+    printf("Map creation\n");
     game->map = create_map(width, height);
+    printf("Map created\n");
     generate_map(game->map, game->players, game->current);
+    printf("Map generated\n");
     game->evolve_Iteration = 0;
-    game->nearest = game->player;
+    game->nearest = game->players[0];
+    draw_map(game->map, "map.txt", game->players, game->current);
     return game;
 }
 
@@ -46,7 +85,7 @@ void nearest_player_same_level(GameOfLifeAI* game, Player* player) {
         if (play == player)
             continue;
         if (play->level == player->level) {
-            if (nearest == game->player)
+            if (nearest == game->players[0])
                 nearest = play;
             else if (get_distance(player, nearest) > get_distance(player, play))
                 nearest = play;
@@ -76,53 +115,41 @@ void check_evolution(GameOfLifeAI* game) {
         reward += play->level;
         evolve(play);
     }
-
-    // choose one of the players that can evolve
-    if (addPlayer) {
-        Player* player = (players_count > 0) ? players_[rand() % players_count] : game->player;
-        game->evolve_Iteration = 50;
-        Player* new_player = init_player(game->map_size.x, game->map_size.y, rand() % 1212121, 1);
-        set_child(player, new_player);
-        game->players = (Player**)realloc(game->players, (game->current + 2) * sizeof(Player*));
-        new_player->appearance_time = game->time;
-        game->players[game->current] = new_player;
-        // appearence time
-        game->players[game->current + 1] = NULL; // Null terminator
-        game->current++;
-        free(players_);
-    }
 }
 
-void add_pending_players(GameOfLifeAI* game) {
-    double current_time = game->time;
-    for (int i = 0; i < game->current; i++) {
-        Player* player2 = game->players[i];
-        double appearance_time = player2->appearance_time;
-        Player** players = NULL;
-        int players_count = 0;
-        for (int j = 0; j < game->current; j++) {
-            Player* player1 = game->players[j];
-            if (player1 != player2) {
-                players = (Player**)realloc(players, (players_count + 1) * sizeof(Player*));
-                players[players_count] = player1;
-                players_count++;
-            }
-        }
-        if (appearance_time + 2 < current_time) {
-            game->players = (Player**)realloc(game->players, (game->current + 1) * sizeof(Player*));
-            game->players[game->current] = player2;
-            game->current++;
-            for (int j = 0; j < players_count; j++)
-                set_child(players[j], player2);
-            free(players);
+bool check_evolution_player(GameOfLifeAI* game, Player* player) {
+    int current = check_evolution_requirements(player, game->players, game->current);
+    if (current == 1) {
+        evolve(player);
+        return true;
+    }
+    return false;
+}
+
+void add_egg(GameOfLifeAI* game, Player* player) {
+    game->evolve_Iteration = 50;
+    Player* new_player = init_player(game->map_size.x, game->map_size.y, rand() % 1212121, 1, player->team);
+    game->players = (Player**)realloc(game->players, (game->current + 2) * sizeof(Player*));
+    new_player->appearance_time = game->time;
+    // appearence time
+    for (int i = 0; i < game->nb_team; i++) {
+        if (strcmp(game->teams_name[i], player->team) == 0) {
+            game->teams_slot[i]++;
+            game->players = (Player**)realloc(game->players, (game->current + 2) * sizeof(Player*));
+            game->players[game->current] = new_player;
+            game->players[game->current + 1] = NULL; // Null terminator
+            break;
         }
     }
+    game->current++;
 }
 
 void add_player(GameOfLifeAI* game, Player* player) {
-    game->players = (Player**)realloc(game->players, (game->current + 1) * sizeof(Player*));
+    game->players = (Player**)realloc(game->players, (game->current + 2) * sizeof(Player*));
     game->players[game->current] = player;
+    game->players[game->current + 1] = NULL; // Null terminator
     game->current++;
+
     player->id = rand() % 100000;
 }
 
@@ -138,6 +165,8 @@ Ressource *get_resources(Map *map, Point position, map_size map_size) {
     int height = map_size.y;
     Ressource *resources;
     if (position.x < width && position.y < height) {
+        printf("map->map[position.x][position.y]: %d\n", map->map[position.x][position.y]);
+
         resources = &(map->map[position.x][position.y]);
     } else if (position.x < width) {
         resources = &(map->map[position.x][0]);
@@ -146,6 +175,7 @@ Ressource *get_resources(Map *map, Point position, map_size map_size) {
     } else {
         resources = &(map->map[0][0]);
     }
+    printf("Resources: %d\n", resources[0]);
     return resources;
 }
 
@@ -170,8 +200,11 @@ Ressource *check_next_move(GameOfLifeAI* game, Player* player, Point* player_pos
     game->time++;
     game->evolve_Iteration++;
     Point next_pos = get_position_after(player, player->direction);
-    resources = get_resources(game->map, next_pos, game->map_size);
-    printf("Resources: %d\n", resources[0]);
+    printf("Next pos: %d, %d\n", next_pos.x, next_pos.y);
+    resources = game->map->map[next_pos.x][next_pos.y];
+    for (int i = 0; resources[i] != 0; i++) {
+        printf("Resources: %d\n", resources[i]);
+    }
     *player_pos = next_pos;
     return resources;
 }
@@ -199,8 +232,6 @@ bool verify_next_tile(GameOfLifeAI* game, Player* player, Point posNext, int* re
                 break;
             }
         }
-        if (!isPlayer2)
-            update_map(game->map, player->position, Ressource_EMPTY);
         return false;
     }
     else {
@@ -215,19 +246,16 @@ bool verify_next_tile(GameOfLifeAI* game, Player* player, Point posNext, int* re
                 break;
             }
         }
-        if (!isPlayer2)
-            update_map(game->map, player->position, Ressource_EMPTY);
         return true;
     }
 }
 
-int move_player(Player* player, int condition, Ressource* resources) {
+int move_player(Player* player, int condition, Ressource* resources, Point player_pos) {
     int reward = 0;
     printf("Condition: %d\n", condition);
     if (condition) {
         printf("Moving player\n");
-        player->position = move(player);
-        printf("Player position: %d, %d\n", player->position.x, player->position.y);
+        player->position = player_pos;
         int length = sizeof(resources) / sizeof(resources[0]);
         printf("Length: %d\n", length);
         for (int i = 0; i < length; i++) {
@@ -240,16 +268,17 @@ int move_player(Player* player, int condition, Ressource* resources) {
             if (resource != Ressource_EMPTY) {
                 reward += 2;
                 // add resource to player
-                check_resources(resources, player);
+                // check_resources(resources, player);
             }
             printf("Reward: %d\n", reward);
         }
     }
     else {
-        player->position = move(player);
+        player->position = player_pos;
     }
     return reward;
 }
+
 
 void check_game_state(GameOfLifeAI* game) {
     if (game->timeBeforeRegen <= 0) {
@@ -271,7 +300,7 @@ int check_player_state(Player* player, int* reward) {
 }
 
 Direction choose_direction(int* action, Player* player) {
-    Direction clock_wise[5] = { RIGHT, LEFT, UP, DOWN, NONE };
+    Direction clock_wise[5] = { RIGHT, DOWN, LEFT, UP, NONE };
     int idx = 0;
     for (int i = 0; i < 5; i++) {
         if (player->direction == clock_wise[i]) {
@@ -299,38 +328,39 @@ Direction choose_direction(int* action, Player* player) {
     return player->direction;
 }
 
-void check_resources(Ressource* resources, Player* player)
+Inventory check_resources(Ressource* resources, Player* player)
 {
     int length = sizeof(resources) / sizeof(resources[0]);
+    Inventory inventory = player->inventory;
 
-    for (int i = 0; i < length; i++) {
+    for (int i = 0; resources[i] != 0; i++) {
         Ressource resource = resources[i];
-        if (resource != Ressource_EMPTY) {
-            switch (resource) {
-                case Ressource_FOOD:
-                    player->inventory.food++;
-                    break;
-                case Ressource_LIMEMATE:
-                    player->inventory.linemate++;
-                    break;
-                case Ressource_DERAUMERE:
-                    player->inventory.deraumere++;
-                    break;
-                case Ressource_SIBUR:
-                    player->inventory.sibur++;
-                    break;
-                case Ressource_MENDIANE:
-                    player->inventory.mendiane++;
-                    break;
-                case Ressource_PHIRAS:
-                    player->inventory.phiras++;
-                    break;
-                case Ressource_THYSTAME:
-                    player->inventory.thystame++;
-                    break;
-                default:
-                    break;
-            }
+        switch (resource) {
+            case Ressource_FOOD:
+                inventory.food++;
+                break;
+            case Ressource_LIMEMATE:
+                inventory.linemate++;
+                break;
+            case Ressource_DERAUMERE:
+                inventory.deraumere++;
+                break;
+            case Ressource_SIBUR:
+                inventory.sibur++;
+                break;
+            case Ressource_MENDIANE:
+                inventory.mendiane++;
+                printf("Mendiane: %d\n", inventory.mendiane);
+                break;
+            case Ressource_PHIRAS:
+                inventory.phiras++;
+                break;
+            case Ressource_THYSTAME:
+                inventory.thystame++;
+                break;
+            default:
+                break;
         }
     }
+    return inventory;
 }

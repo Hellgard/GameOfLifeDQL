@@ -7,15 +7,20 @@
 
 CC 			=	gcc
 
-NAME		=	myftp
+NAME		=	zappy_server
 
 NAME_EXEC	=	./$(NAME)
 
 SRC			=	sources/
+SRC_GAME	=	Game/source/
 
 SRC_C		=	$(wildcard $(SRC)*.c)	\
 				$(wildcard $(SRC)*/*.c)	\
-				$(wildcard $(SRC)*/*/*.c)
+				$(wildcard $(SRC)*/*/*.c) \
+				$(wildcard $(SRC_GAME)*.c)	\
+				$(wildcard $(SRC_GAME)*/*.c)	\
+				$(wildcard $(SRC_GAME)*/*/*.c)
+				
 OBJ_C       =   $(SRC_C:%.c=%.o)
 
 OBJS 		=	$(OBJ_C)
